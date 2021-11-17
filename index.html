@@ -37,7 +37,6 @@
 			uniform sampler2D diffuseMap;
 			uniform sampler2D normalMap;
 			uniform sampler2D roughnessMap;
-			uniform sampler2D aoMap;
 			uniform samplerCube envMap;
 			uniform vec2 normalScale;
 			uniform vec2 textureRepeat;
@@ -119,9 +118,10 @@
 
 				vec3 fresnell = FSchlick(lDoth);
 				vec3 fresneln = FSchlick(nDoth);
-				vec3 BRDF = (vec3(1.0)-fresnell)*cdiff/PI + fresnell*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/
-					(4.0*nDotl*nDotv);
-				vec3 outRadiance = PI * clight * nDotl * BRDF + clight * cdiff * texture2D( aoMap, uVv * textureRepeat ).xyz * BRDF * PI + (fresneln * envLight) * BRDF * PI;
+				vec3 BRDF = (vec3(1.0)-fresnell)*cdiff/PI + fresnell*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(nDotl*nDotv);
+
+				vec3 outRadiance = clight * nDotl * BRDF * PI + (fresneln * envLight) * BRDF;
+
 				// gamma encode the final value
 				gl_FragColor = vec4(pow( outRadiance, vec3(1.0/2.2)), 1.0);
 			}

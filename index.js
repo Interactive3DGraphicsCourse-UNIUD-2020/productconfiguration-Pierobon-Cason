@@ -13,7 +13,6 @@ var textureCube = textureCubeWhite;
 var diffuseMap;
 var specularMap;
 var roughnessMap;
-var aoMap;
 var normalMap;
 let clock = new THREE.Clock();
 let delta = 0;
@@ -97,13 +96,10 @@ function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
 
-    ourMaterial = new THREE.MeshLambertMaterial({
-        side: THREE.DoubleSide,
-        color: 0x696969
-    });
+    var ourMaterial = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapPlastic1, specularMapPlastic, roughnessMapPlastic, normalMapPlastic, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     loader = new THREE.OBJLoader();
     loader.load("model/football2.obj", function (group) {
         geometry = group.children[0].geometry;
@@ -159,7 +155,6 @@ function addPlaneAndLight() {
     lightP.shadow.mapSize.height = 5012;
     lightP.shadow.bias = 0.0001;
 
-    textureCube = textureCubeWhite;
     scene.background = textureCubeWhite;
 }
 
@@ -167,14 +162,14 @@ function presentNormal() {
     scene.add(meshPlane);
     textureCube = textureCubeWhite;
     scene.background = textureCube;
-    mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMap, specularMap, roughnessMap, normalMap, aoMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
+    mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMap, specularMap, roughnessMap, normalMap, textureCube), vertexShader: vs1, fragmentShader: fs1 });
 }
 
 function presentEnv() {
     textureCube = textureCubeStadium;
     scene.remove(meshPlane);
     scene.background = textureCube;
-    mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMap, specularMap, roughnessMap, normalMap, aoMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
+    mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMap, specularMap, roughnessMap, normalMap, textureCube), vertexShader: vs1, fragmentShader: fs1 });
 }
 
 function changeEnv() {
@@ -191,57 +186,26 @@ function changeEnv() {
 function changeMaterial() {
     if (plasticMod1 == true) {
         plasticMod1 = false;
-        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapPlastic1, specularMapPlastic, roughnessMapPlastic, normalMapPlastic, aoMapPlastic, textureCube), vertexShader: vs1, fragmentShader: fs1 });
-        diffuseMap = diffuseMapPlastic1;
-        specularMap = specularMapPlastic;
-        roughnessMap = roughnessMapPlastic;
-        normalMap = normalMapPlastic;
-        aoMap = aoMapPlastic;
+        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapPlastic1, specularMapPlastic, roughnessMapPlastic, normalMapPlastic, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     }
     if (plasticMod2 == true) {
         plasticMod2 = false;
-        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapPlastic2, specularMapPlastic, roughnessMapPlastic, normalMapPlastic, aoMapPlastic, textureCube), vertexShader: vs1, fragmentShader: fs1 });
-        diffuseMap = diffuseMapPlastic2;
-        specularMap = specularMapPlastic;
-        roughnessMap = roughnessMapPlastic;
-        normalMap = normalMapPlastic;
-        aoMap = aoMapPlastic;
+        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapPlastic2, specularMapPlastic, roughnessMapPlastic, normalMapPlastic, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     }
     if (metalGold == true) {
         metalGold = false;
-        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapMetalGold, specularMapMetal, roughnessMapMetal, normalMapMetal, aoMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
-        diffuseMap = diffuseMapMetalGold;
-        specularMap = specularMapMetal;
-        roughnessMap = roughnessMapMetal;
-        normalMap = normalMapMetal;
-        aoMap = aoMapMetal;
+        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapMetalGold, specularMapMetal, roughnessMapMetal, normalMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     }
     if (metalSilver == true) {
         metalSilver = false;
-        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapMetalSilver, specularMapMetal, roughnessMapMetal, normalMapMetal, aoMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
-        diffuseMap = diffuseMapMetalSilver;
-        specularMap = specularMapMetal;
-        roughnessMap = roughnessMapMetal;
-        normalMap = normalMapMetal;
-        aoMap = aoMapMetal;
+        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapMetalSilver, specularMapMetal, roughnessMapMetal, normalMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     }
     if (canvasMod1 == true) {
         canvasMod1 = false;
-        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapCanvas1, specularMapCanvas, roughnessMapCanvas, normalMapCanvas, aoMapMetal, textureCube), vertexShader: vs1, fragmentShader: fs1 });
-        diffuseMap = diffuseMapCanvas1;
-        specularMap = specularMapCanvas;
-        roughnessMap = roughnessMapCanvas;
-        normalMap = normalMapCanvas;
-        aoMap = aoMapMetal;
+        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapCanvas1, specularMapCanvas, roughnessMapCanvas, normalMapCanvas, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     }
     if (canvasMod2 == true) {
         canvasMod2 = false;
-        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapCanvas2, specularMapCanvas, roughnessMapCanvas, normalMapCanvas, aoMapCanvas, textureCube), vertexShader: vs1, fragmentShader: fs1 });
-        diffuseMap = diffuseMapCanvas2;
-        specularMap = specularMapCanvas;
-        roughnessMap = roughnessMapCanvas;
-        normalMap = normalMapCanvas;
-        aoMap = aoMapCanvas;
+        mesh.material = new THREE.ShaderMaterial({ uniforms: applyMaterial(diffuseMapCanvas2, specularMapCanvas, roughnessMapCanvas, normalMapCanvas, textureCube), vertexShader: vs1, fragmentShader: fs1 });
     }
-
 }
