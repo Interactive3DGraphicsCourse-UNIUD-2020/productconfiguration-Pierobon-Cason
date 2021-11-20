@@ -28,3 +28,6 @@ Si è deciso di utilizzare 3 shaders, ognuno dei quali viene applicato in determ
 Durante la scrittura del codice si è notato un lag della scena, questo dovuto a un non setting degli FPS. Ragion per cui si è optato per l'aggiunta di
 una condizione nella funzione update, con lo scopo di dettare la frequenza di aggiornamento a 60 FPS.
 Come indicazioni si è aggiunto un tone mapping di tipo ACESFilmicToneMapping, nel codice js. 
+## oggetto utilizzato e PRB
+L'oggetto è stato scelto dal sito: https://sketchfab.com/.
+I materiali PBR sono stati presi dai siti: https://3dtextures.me/ e https://freepbr.com/.
