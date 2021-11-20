@@ -182,7 +182,7 @@ function addPlaneAndLight() {
     
     lightP3.position.set(0, 400, 100.0);
 
-    ambientLight = new THREE.AmbientLight(0xffffff);
+    ambientLight = new THREE.AmbientLight(0xffffff,0.4);
 
     //la luce spotLight sarà responsabile di creare le ombre
     lightP1.castShadow = true;
