@@ -9,12 +9,12 @@
 	<script src='lib/OrbitControls.js'></script>
 	<script src='lib/dat.gui.min.js'></script>
 	<script src='lib/OBJLoader.js'></script>
-	
-	<script type="text/x-glsl" id="vertex1">
+
+	<script type="text/x-glsl" id="vertex-normalBackground">
 		varying vec3 vNormal;
 		varying vec3 vPosition;
-		varying vec3 wPosition;
 		varying vec2 uVv;
+		varying vec3 wPosition;
 
 		void main() {
 			vec4 vPos = modelViewMatrix * vec4( position, 1.0 );
@@ -25,12 +25,167 @@
 			gl_Position = projectionMatrix * vPos;
 		}
 		</script>
-
-	<script type="text/x-glsl" id="fragment1">
+	<script type="text/x-glsl" id="fragment-normalBackground">
 			varying vec3 vNormal;
 			varying vec3 vPosition;
 			varying vec3 wPosition;
 			varying vec2 uVv;
+			const float PI = 3.14159;
+			
+			vec3 cdiff;
+			vec3 cspec;
+			float roughness;
+
+			//uniforms input
+			uniform vec3 pointLightPosition1;
+			uniform vec3 clight1;
+			uniform vec3 pointLightPosition2;
+			uniform vec3 clight2;
+			uniform vec3 pointLightPosition3;
+			uniform vec3 clight3;
+			uniform vec3 ambientLight;
+
+			uniform sampler2D specularMap;
+			uniform sampler2D diffuseMap;
+			uniform sampler2D normalMap;
+			uniform sampler2D roughnessMap;
+			uniform vec2 normalScale;
+			uniform vec2 textureRepeat;
+			
+			//funzioni per il calcolo BRDF
+			vec3 FSchlick(float lDoth) {
+				return (cspec + (vec3(1.0)-cspec)*pow(1.0 - lDoth,5.0));
+			}
+
+			float DGGX(float nDoth, float alpha) {
+				float alpha2 = alpha*alpha;
+				float d = nDoth*nDoth*(alpha2-1.0)+1.0;
+				return (  alpha2 / (PI*d*d));
+			}
+
+			float G1(float dotProduct, float k) {
+				return (dotProduct / (dotProduct*(1.0-k) + k) );
+			}
+
+			float GSmith(float nDotv, float nDotl) {
+					float k = roughness*roughness;
+					return G1(nDotl,k)*G1(nDotv,k);
+			}
+
+			#extension GL_OES_standard_derivatives : enable
+
+			vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
+
+				vec3 q0 = dFdx( eye_pos.xyz );
+				vec3 q1 = dFdy( eye_pos.xyz );
+				vec2 st0 = dFdx( uVv.st );
+				vec2 st1 = dFdy( uVv.st );
+	
+				vec3 S = normalize(  q0 * st1.t - q1 * st0.t );
+				vec3 T = normalize( -q0 * st1.s + q1 * st0.s );
+				vec3 N =  surf_norm ;
+	
+				vec3 mapN = normalize(texture2D( normalMap, uVv ).xyz * 2.0 - 1.0);
+				mapN.xy = normalScale * mapN.xy;
+				mat3 tsn = mat3( S, T, N );
+				return normalize( tsn * mapN );
+	
+			}
+
+			vec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {
+				return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );
+			}
+
+			void main() {
+				vec4 lPosition1 = viewMatrix * vec4( pointLightPosition1, 1.0 );
+				vec4 lPosition2 = viewMatrix * vec4( pointLightPosition2, 1.0 );
+				vec4 lPosition3 = viewMatrix * vec4( pointLightPosition3, 1.0 );
+
+				vec3 l1 = normalize(lPosition1.xyz - vPosition.xyz);
+				vec3 l2 = normalize(lPosition2.xyz - vPosition.xyz);
+				vec3 l3 = normalize(lPosition3.xyz - vPosition.xyz);
+
+				vec3 n = perturbNormal2Arb( vPosition, normalize( vNormal ));
+				vec3 v = normalize( -vPosition);
+
+				vec3 h1 = normalize( v + l1);
+				vec3 h2 = normalize( v + l2);
+				vec3 h3 = normalize( v + l3);
+
+				float nDotl1 = max(dot( n, l1 ),0.000001);
+				float nDotl2 = max(dot( n, l2 ),0.000001);
+				float nDotl3 = max(dot( n, l3 ),0.000001);
+
+				float lDoth1 = max(dot( l1, h1 ),0.000001);
+				float lDoth2 = max(dot( l2, h2 ),0.000001);
+				float lDoth3 = max(dot( l3, h3 ),0.000001);
+
+				float nDoth1 = max(dot( n, h1 ),0.000001);
+				float nDoth2 = max(dot( n, h2 ),0.000001);
+				float nDoth3 = max(dot( n, h3 ),0.000001);
+
+				float vDoth1 = max(dot( v, h1 ),0.000001);
+				float vDoth2 = max(dot( v, h2 ),0.000001);
+				float vDoth3 = max(dot( v, h3 ),0.000001);
+
+				float nDotv = max(dot( n, v ),0.000001);
+
+				vec3 worldN = inverseTransformDirection( n, viewMatrix );
+				vec3 worldV = cameraPosition - wPosition ;
+				vec3 r = normalize( reflect(-worldV,worldN));
+
+				cdiff = texture2D( diffuseMap, uVv*textureRepeat ).rgb;
+				// texture in sRGB, linearize
+				cdiff = pow( cdiff, vec3(2.2));
+				cspec = texture2D( specularMap, uVv*textureRepeat ).rgb;
+				// texture in sRGB, linearize
+				cspec = pow( cspec, vec3(2.2));
+				roughness = texture2D( roughnessMap, uVv*textureRepeat).r;
+
+				vec3 fresnell1 = FSchlick(lDoth1);
+				vec3 fresnell2 = FSchlick(lDoth2);
+				vec3 fresnell3 = FSchlick(lDoth3);
+
+				vec3 BRDF1 = (vec3(1.0)-fresnell1)*cdiff/PI + fresnell1*GSmith(nDotv,nDotl1)*DGGX(nDoth1,roughness*roughness)/(nDotl1*nDotv);
+				vec3 BRDF2 = (vec3(1.0)-fresnell2)*cdiff/PI + fresnell2*GSmith(nDotv,nDotl2)*DGGX(nDoth2,roughness*roughness)/(nDotl2*nDotv);
+				vec3 BRDF3 = (vec3(1.0)-fresnell3)*cdiff/PI + fresnell3*GSmith(nDotv,nDotl3)*DGGX(nDoth3,roughness*roughness)/(nDotl3*nDotv);
+
+				vec3 outRadiance = clight1 * nDotl1 * BRDF1 * PI * 0.5+ clight2 * nDotl2 * BRDF2 * PI * 0.5+ clight3 * nDotl3 * BRDF3 * PI * 0.5 + ambientLight * 0.4 * cdiff;
+
+				// gamma encode the final value
+				gl_FragColor = vec4(pow( outRadiance, vec3(1.0/2.2)), 1.0);
+			}
+		</script>
+	<script type="text/x-glsl" id="vertex-reflection">
+		varying vec3 vNormal;
+		varying vec3 vPosition;
+		varying vec3 wPosition;
+		varying vec2 uVv;
+
+		void main() {
+			vec4 vPos = modelViewMatrix * vec4( position, 1.0 );
+			vPosition = vPos.xyz;
+			//posizione vertice in world space
+			wPosition = (modelMatrix * vec4( position, 1.0 )).xyz;
+			// porto normale in view space
+			vNormal = normalMatrix * normal;
+			uVv = uv;
+			//trasformazione da object space a clip space
+			gl_Position = projectionMatrix * vPos;
+		}
+		</script>
+
+	<script type="text/x-glsl" id="fragment-reflection">
+			varying vec3 vNormal;
+			varying vec3 vPosition;
+			varying vec3 wPosition;
+			varying vec2 uVv;
+			const float PI = 3.14159;
+			vec3 cdiff;
+			vec3 cspec;
+			float roughness;
+
+			//uniforms input
 			uniform vec3 pointLightPosition; // in world space
 			uniform vec3 clight;
 			uniform sampler2D specularMap;
@@ -40,11 +195,8 @@
 			uniform samplerCube envMap;
 			uniform vec2 normalScale;
 			uniform vec2 textureRepeat;
-			const float PI = 3.14159;
-			vec3 cdiff;
-			vec3 cspec;
-			float roughness;
-
+			
+			//funzioni per il calcolo BRDF
 			vec3 FSchlick(float lDoth) {
 				return (cspec + (vec3(1.0)-cspec)*pow(1.0 - lDoth,5.0));
 			}
@@ -117,57 +269,189 @@
 				envLight = pow( envLight, vec3(2.2));
 
 				vec3 fresnell = FSchlick(lDoth);
-				vec3 fresneln = FSchlick(nDoth);
+				vec3 fresneln = FSchlick(nDotv);
 				vec3 BRDF = (vec3(1.0)-fresnell)*cdiff/PI + fresnell*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(nDotl*nDotv);
 
-				vec3 outRadiance = clight * nDotl * BRDF * PI + (fresneln * envLight) * BRDF;
+				vec3 outRadiance = (fresneln * envLight) * cdiff + clight * nDotl * BRDF * PI;
 
 				// gamma encode the final value
 				gl_FragColor = vec4(pow( outRadiance, vec3(1.0/2.2)), 1.0);
 			}
 		</script>
+	<script type="text/x-glsl" id="vertex-noreflection">
+		varying vec3 vNormal;
+		varying vec3 vPosition;
+		varying vec3 wPosition;
+		varying vec2 uVv;
+
+		void main() {
+			vec4 vPos = modelViewMatrix * vec4( position, 1.0 );
+			vPosition = vPos.xyz;
+			//posizione vertice in world space
+			wPosition = (modelMatrix * vec4( position, 1.0 )).xyz;
+			// porto normale in view space
+			vNormal = normalMatrix * normal;
+			uVv = uv;
+			gl_Position = projectionMatrix * vPos;
+		}
+		</script>
+	<script type="text/x-glsl" id="fragment-noreflection">
+		varying vec3 vNormal;
+		varying vec3 vPosition;
+		varying vec3 wPosition;
+		varying vec2 uVv;
+		const float PI = 3.14159;
+		vec3 cdiff;
+		vec3 cspec;
+		float roughness;
+
+		//uniforms input
+		uniform vec3 pointLightPosition; // in world space
+		uniform vec3 clight;
+		uniform sampler2D normalMap;
+		uniform sampler2D diffuseMap;
+		uniform sampler2D specularMap;
+		uniform samplerCube irradianceMap;
+		uniform sampler2D roughnessMap;
+		uniform vec2 textureRepeat;
+		uniform vec2 normalScale;
+
+	#extension GL_OES_standard_derivatives : enable
+
+	vec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {
+
+		vec3 q0 = dFdx( eye_pos.xyz );
+		vec3 q1 = dFdy( eye_pos.xyz );
+		vec2 st0 = dFdx( uVv.st );
+		vec2 st1 = dFdy( uVv.st );
+
+		vec3 S = normalize(  q0 * st1.t - q1 * st0.t );
+		vec3 T = normalize( -q0 * st1.s + q1 * st0.s );
+		vec3 N =  surf_norm ;
+
+		vec3 mapN = normalize(texture2D( normalMap, uVv ).xyz * 2.0 - 1.0);
+		mapN.xy = normalScale * mapN.xy;
+		mat3 tsn = mat3( S, T, N );
+		return normalize( tsn * mapN );
+	}
+	//funzione calcolo riflettanza di Fresnel
+	vec3 FSchlick(float lDoth) {
+		return (cspec + (vec3(1.0)-cspec)*pow(1.0 - lDoth,5.0));
+	}
+
+	float DGGX(float nDoth, float alpha) {
+		float alpha2 = alpha*alpha;
+		float d = nDoth*nDoth*(alpha2-1.0)+1.0;
+		return (  alpha2 / (PI*d*d));
+	}
+
+	float G1(float dotProduct, float k) {
+		return (dotProduct / (dotProduct*(1.0-k) + k) );
+	}
+
+	float GSmith(float nDotv, float nDotl) {
+		float k = roughness*roughness;
+		return G1(nDotl,k)*G1(nDotv,k);
+	}
+
+	vec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {
+		return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );
+	}
+
+		void main() {
+			//ritorna i texel data una texture, che in questo caso setta il colore base dell'oggetto, il secondo parametro è per settare le coordinate
+			cdiff = texture2D( diffuseMap, uVv*textureRepeat ).rgb;
+			//texture in sRGB, per linearizzare
+			cdiff = pow( cdiff, vec3(2.2));
+
+			//ritorna i texel data una texture, che in questo caso setta la roughness dell'oggetto, il secondo parametro è per settare le coordinate
+			//la roughness map è la texture in bianco e nero che permette il controllo della ruvidità di un materiale. 
+			//Un materiale grezzo diffonderà la luce riflessa in più direzioni rispetto a un materiale liscio.
+			roughness = texture2D( roughnessMap, uVv*textureRepeat).r;
+
+			//ritorna i texel data una texture, che in questo caso setta la specular dell'oggetto, il secondo parametro è per settare le coordinate
+			//la specular map è la texture dove in bianco vengono dipinte le zone che sono più lucide ed in nero quelle opache
+			cspec = texture2D( specularMap, uVv*textureRepeat ).rgb;
+			//texture in sRGB, per linearizzare
+			cspec = pow( cspec, vec3(2.2));
+
+			vec3 n = perturbNormal2Arb( vPosition, normalize( vNormal ));
+			//posizione luce in view space
+			vec4 lPosition = viewMatrix * vec4( pointLightPosition, 1.0 );
+			//normalizzo 
+			vec3 l = normalize(lPosition.xyz - vPosition.xyz);
+			vec3 v = normalize( -vPosition);
+			vec3 h = normalize( v + l);
+
+			// normale in world space
+			vec3 worldN = inverseTransformDirection( n, viewMatrix );
+			// calcolo irradianza
+			vec3 irradiance = textureCube( irradianceMap, worldN).rgb;
+
+			//vari prodotti scalari, dove si vuole evitare che siano trasparenti quindi si da un valore minimo di 0.000001
+			float nDotl = max(dot( n, l ),0.000001);
+			float lDoth = max(dot( l, h ),0.000001);
+			float nDoth = max(dot( n, h ),0.000001);
+			float nDotv = max(dot( n, v ),0.000001);
+
+			//calcolo riflettanza di Fresnel della luce spotlight, quindi quantità di luce che viene riflessa dalla superficie
+			vec3 fresnel = FSchlick(lDoth);
+			//calcolo BRDF
+			vec3 BRDF = (vec3(1.0)-fresnel)*cdiff/PI + fresnel*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(nDotl*nDotv);
+
+			//linearizza la irradianza
+			irradiance = pow( irradiance, vec3(2.2));
+			//si calcola la luce uscente in base alla luce spotlight e la luce data dall'envMap, in questo caso siccome il materiale non
+			//lucido, quindi non rilfette molto l'immagine dell'ambiente, si è applicata una irradiance map, che viene vista come una luce e 
+			//quindi sommata
+			vec3 outRadiance = cdiff * irradiance + clight * nDotl * BRDF * PI;
+			//si effettua il gamma encode per il valore finale
+			gl_FragColor = vec4(pow( outRadiance, vec3(1.0/2.2)), 1.0);
+		}
+	</script>
 </head>
+
 <body>
-		<div class="titolo">
-			<h1>A.C.M.E.</h1>
-			<p>foot configurator</p>
+	<div class="titolo">
+		<h1>A.C.M.E.</h1>
+		<p>foot configurator</p>
+	</div>
+	<div class="product-card">
+		<canvas id="myCanvasId" class="product-pic"></canvas>
+		<div class="dropdown">
+			<button class="dropbtn">Background</button>
+			<div class="dropdown-content">
+				<a href="#" id="envMap">Stadium</a>
+				<a href="#" id="norPre">None</a>
+			</div>
 		</div>
-		<div class="product-card">
-			<canvas id="myCanvasId" class="product-pic"></canvas>
+	</div>
+	<div class="product-specs">
+		<div class="buttons">
 			<div class="dropdown">
-				<button class="dropbtn">Background</button>
+				<button class="dropbtn">Plastica</button>
 				<div class="dropdown-content">
-				  <a href="#" id="envMap">Stadium</a>
-				  <a href="#" id="norPre">None</a>
+					<a href="#" id="plasticMod1">Plastica 1</a>
+					<a href="#" id="plasticMod2">Plastica 2</a>
+				</div>
+			</div>
+			<div class="dropdown">
+				<button class="dropbtn">Metalli</button>
+				<div class="dropdown-content">
+					<a href="#" id="metalGold">Oro</a>
+					<a href="#" id="metalSilver">Argento</a>
+				</div>
+			</div>
+			<div class="dropdown">
+				<button class="dropbtn">Tela</button>
+				<div class="dropdown-content">
+					<a href="#" id="tela1">Tela 1</a>
+					<a href="#" id="tela2">Tela 2</a>
 				</div>
 			</div>
 		</div>
-		<div class="product-specs">
-			<div class="buttons">
-				<div class="dropdown">
-					<button class="dropbtn">Plastica</button>
-					<div class="dropdown-content">
-						<a href="#" id="plasticMod1">Plastica 1</a>
-						<a href="#" id="plasticMod2">Plastica 2</a>
-					</div>
-				</div>
-				<div class="dropdown">
-					<button class="dropbtn">Metalli</button>
-					<div class="dropdown-content">
-						<a href="#" id="metalGold">Oro</a>
-						<a href="#" id="metalSilver">Argento</a>
-					</div>
-				</div>
-				<div class="dropdown">
-					<button class="dropbtn">Tela</button>
-						<div class="dropdown-content">
-							<a href="#" id="tela1">Tela 1</a>
-							<a href="#" id="tela2">Tela 2</a>
-						</div>
-				</div>
-			</div>
-			
-		</div>
+
+	</div>
 
 </body>
 <script src='index.js'></script>

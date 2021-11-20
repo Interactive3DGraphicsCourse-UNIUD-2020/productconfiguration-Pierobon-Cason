@@ -22,3 +22,8 @@
 - rimozione problemi di lag
 ## 16/11/2021
 - varie modifiche al codice JS
+## 17/11/2021
+- aggiunta shader irradiance
+## 18/11/2021
+- aggiunta commenti nel codice
+- scrittura README
