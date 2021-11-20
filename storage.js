@@ -74,7 +74,7 @@ function applyMaterialOnlyLight(diffuseMapPar, specularMapPar, roughnessMapPar, 
     var uniforms = {
         diffuseMap: { type: "t", value: diffuseMapPar },
         normalMap: { type: "t", value: normalMapPar },
-        normalScale: { type: "v2", value: new THREE.Vector2(0.5, 0.5) },
+        normalScale: { type: "v2", value: new THREE.Vector2(0.2, 0.2) },
         textureRepeat: { type: "v2", value: new THREE.Vector2(1, 1) },
         roughnessMap: { type: "t", value: roughnessMapPar },
         specularMap: { type: "t", value: specularMapPar },
