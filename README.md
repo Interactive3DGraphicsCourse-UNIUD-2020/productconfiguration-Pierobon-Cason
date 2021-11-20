@@ -13,4 +13,8 @@ oltre che alla mappa che detta la texture del materiale (diffuse map):
   - specular map: texture in scala grigio, dove in bianco vengono dipinte le zone che sono più lucide ed in nero quelle opache.
 ## Shaders
 Si è deciso di utilizzare 3 shaders, ognuno dei quali viene applicato in determinate circostanze:
- 
+  - vertex / fragment -normalBackground: questo shader ha lo scopo di calcolare il colore della scarpa quando lo sfondo è quello bianco. Ci sono 3 luci di tipo 
+  SpotLight, e una luce ambientale. Si è deciso di aggiungere tante luci per rendere l'oggetto più chiaro possibile. Si è calcolata una BRDF 
+  per tutte e 3 le luci, successivamente esse verranno pesate con 0.5, in modo da non rendere l'oggetto troppo chiaro e quindi fastidioso alla vista. 
+  La luce ambientale è stata aggiunta per rendere più chiara la parte sotto della scarpa, non creando quindi una zona scura.
+  - 
