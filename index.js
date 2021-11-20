@@ -150,9 +150,6 @@ function init() {
 
     //altrimenti darà errore se si cambierà il materiale
     ourMaterial.needsUpdate = true;
-
-    const axesHelper = new THREE.AxesHelper(100);
-    scene.add(axesHelper);
 }
 
 //si aggiunge un piano per far vedere l'ombra, nel caso di ambiente bianco, e una luce di tipo spotLight
