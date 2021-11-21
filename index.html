@@ -388,7 +388,7 @@
 			// calcolo irradianza
 			vec3 irradiance = textureCube( irradianceMap, worldN).rgb;
 
-			//vari prodotti scalari, dove si vuole evitare che siano trasparenti quindi si da un valore minimo di 0.000001
+			//vari prodotti scalari, dove si vuole evitare di avere valori negativi, quindi si da un valore minimo di 0.000001
 			float nDotl = max(dot( n, l ),0.000001);
 			float lDoth = max(dot( l, h ),0.000001);
 			float nDoth = max(dot( n, h ),0.000001);
