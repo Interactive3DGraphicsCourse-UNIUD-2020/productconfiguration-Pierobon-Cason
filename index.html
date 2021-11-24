@@ -146,9 +146,9 @@
 				vec3 fresnell2 = FSchlick(lDoth2);
 				vec3 fresnell3 = FSchlick(lDoth3);
 
-				vec3 BRDF1 = (vec3(1.0)-fresnell1)*cdiff/PI + fresnell1*GSmith(nDotv,nDotl1)*DGGX(nDoth1,roughness*roughness)/(nDotl1*nDotv);
-				vec3 BRDF2 = (vec3(1.0)-fresnell2)*cdiff/PI + fresnell2*GSmith(nDotv,nDotl2)*DGGX(nDoth2,roughness*roughness)/(nDotl2*nDotv);
-				vec3 BRDF3 = (vec3(1.0)-fresnell3)*cdiff/PI + fresnell3*GSmith(nDotv,nDotl3)*DGGX(nDoth3,roughness*roughness)/(nDotl3*nDotv);
+				vec3 BRDF1 = (vec3(1.0)-fresnell1)*cdiff/PI + fresnell1*GSmith(nDotv,nDotl1)*DGGX(nDoth1,roughness*roughness)/(4.0*nDotl1*nDotv);
+				vec3 BRDF2 = (vec3(1.0)-fresnell2)*cdiff/PI + fresnell2*GSmith(nDotv,nDotl2)*DGGX(nDoth2,roughness*roughness)/(4.0*nDotl2*nDotv);
+				vec3 BRDF3 = (vec3(1.0)-fresnell3)*cdiff/PI + fresnell3*GSmith(nDotv,nDotl3)*DGGX(nDoth3,roughness*roughness)/(4.0*nDotl3*nDotv);
 
 				vec3 outRadiance = clight1 * nDotl1 * BRDF1 * PI * 0.5+ clight2 * nDotl2 * BRDF2 * PI * 0.5+ clight3 * nDotl3 * BRDF3 * PI * 0.5 + ambientLight * 0.4 * cdiff;
 
@@ -270,7 +270,7 @@
 
 				vec3 fresnell = FSchlick(lDoth);
 				vec3 fresneln = FSchlick(nDotv);
-				vec3 BRDF = (vec3(1.0)-fresnell)*cdiff/PI + fresnell*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(nDotl*nDotv);
+				vec3 BRDF = (vec3(1.0)-fresnell)*cdiff/PI + fresnell*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(4.0*nDotl*nDotv);
 
 				vec3 outRadiance = (fresneln * envLight) * cdiff + clight * nDotl * BRDF * PI;
 
@@ -397,7 +397,7 @@
 			//calcolo riflettanza di Fresnel della luce spotlight, quindi quantità di luce che viene riflessa dalla superficie
 			vec3 fresnel = FSchlick(lDoth);
 			//calcolo BRDF
-			vec3 BRDF = (vec3(1.0)-fresnel)*cdiff/PI + fresnel*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(nDotl*nDotv);
+			vec3 BRDF = (vec3(1.0)-fresnel)*cdiff/PI + fresnel*GSmith(nDotv,nDotl)*DGGX(nDoth,roughness*roughness)/(4.0*nDotl*nDotv);
 
 			//linearizza la irradianza
 			irradiance = pow( irradiance, vec3(2.2));
