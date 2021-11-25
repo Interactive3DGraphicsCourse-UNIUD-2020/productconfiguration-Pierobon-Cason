@@ -101,7 +101,7 @@ function applyShaderUniforms(diffuseMapPar, specularMapPar, roughnessMapPar, nor
         vs = vsNormal; fs = fsNormal;
         return applyMaterialOnlyLight(diffuseMapPar, specularMapPar, roughnessMapPar, normalMapPar);
     }
-    if(diffuseMapPar == diffuseMapCanvas1 || diffuseMapPar == diffuseMapCanvas2){
+    if(diffuseMapPar == diffuseMapCanvas1 || diffuseMapPar == diffuseMapCanvas2 || diffuseMapPar == diffuseMapPlastic1 || diffuseMapPar == diffuseMapPlastic2){
         textureCube = textureCubeStadiumIrra;
         vs = vsNoRefle; fs = fsNoRefle;
         return applyMaterialIrra(diffuseMapPar, specularMapPar, roughnessMapPar, normalMapPar, textureCube);
